@@ -1,0 +1,39 @@
+# Binaries
+vibelog
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+
+# Go workspace
+go.work
+
+# Build artifacts
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# vibelog local data
+.vibelog/*.db
+.vibelog/*.db-journal
+*.db
+*.db-journal
+
+# Exported markdown
+vibelog-*.md
