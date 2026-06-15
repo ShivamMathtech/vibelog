@@ -42,23 +42,19 @@ func InstallHooks(repoPath string) error {
 		return err
 	}
 
-	// Write post-commit hook
 	if err := writeHook(hooksDir, "post-commit", postCommitHook); err != nil {
 		return fmt.Errorf("post-commit hook: %w", err)
 	}
 
-	// Write post-checkout hook
 	if err := writeHook(hooksDir, "post-checkout", postCheckoutHook); err != nil {
 		return fmt.Errorf("post-checkout hook: %w", err)
 	}
 
-	// Create .vibelog directory
 	vibelogDir := filepath.Join(repoPath, ".vibelog")
 	if err := os.MkdirAll(vibelogDir, 0755); err != nil {
 		return err
 	}
 
-	// Create default config
 	configPath := filepath.Join(vibelogDir, "config.json")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		config := `{"auto_capture": true, "max_events_per_session": 10000}
@@ -74,12 +70,10 @@ func InstallHooks(repoPath string) error {
 func writeHook(hooksDir, name, content string) error {
 	path := filepath.Join(hooksDir, name)
 
-	// Check if hook already exists and contains vibelog
 	if existing, err := os.ReadFile(path); err == nil {
 		if strings.Contains(string(existing), "vibelog") {
-			return nil // already installed
+			return nil
 		}
-		// Append to existing hook
 		content = string(existing) + "
 " + content
 	}

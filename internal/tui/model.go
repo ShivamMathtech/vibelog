@@ -52,7 +52,7 @@ func (i sessionItem) Description() string {
 
 type Model struct {
 	store       *store.Store
-	mode        string // list, detail, search
+	mode        string
 	sessions    list.Model
 	events      []types.Event
 	viewport    viewport.Model
@@ -125,12 +125,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.exportSession()
 			}
 			return m, nil
-
-		case "/":
-			if m.mode == "list" {
-				m.sessions.SetFilterState(list.Filtering)
-			}
-			return m, nil
 		}
 	}
 
@@ -145,7 +139,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if m.err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress q to quit.", m.err)
+		return fmt.Sprintf("Error: %v
+
+Press q to quit.", m.err)
 	}
 
 	if m.mode == "list" {
@@ -153,8 +149,11 @@ func (m Model) View() string {
 	}
 
 	if m.mode == "detail" {
-		header := titleStyle.Render(" Session Detail ") + "\n"
-		footer := statusStyle.Render("\n↑/↓ scroll • e: export to markdown • q: back") + "\n"
+		header := titleStyle.Render(" Session Detail ") + "
+"
+		footer := statusStyle.Render("
+↑/↓ scroll • e: export to markdown • q: back") + "
+"
 		return header + m.viewport.View() + footer
 	}
 
@@ -172,9 +171,13 @@ func (m *Model) loadDetail(sessionID string) {
 	var content strings.Builder
 	session, _ := m.store.GetSession(sessionID)
 	if session != nil {
-		content.WriteString(fmt.Sprintf("ID: %s\n", session.ID))
-		content.WriteString(fmt.Sprintf("Branch: %s\n", session.Branch))
-		content.WriteString(fmt.Sprintf("Started: %s\n\n", session.StartedAt.Format(time.RFC1123)))
+		content.WriteString(fmt.Sprintf("ID: %s
+", session.ID))
+		content.WriteString(fmt.Sprintf("Branch: %s
+", session.Branch))
+		content.WriteString(fmt.Sprintf("Started: %s
+
+", session.StartedAt.Format(time.RFC1123)))
 	}
 
 	for _, ev := range events {
@@ -193,8 +196,11 @@ func (m *Model) loadDetail(sessionID string) {
 		}
 
 		content.WriteString(style.Render(ev.Type) + " ")
-		content.WriteString(fmt.Sprintf("%s\n", ev.CreatedAt.Format("15:04:05")))
-		content.WriteString(wrap(ev.Content, m.width-4) + "\n\n")
+		content.WriteString(fmt.Sprintf("%s
+", ev.CreatedAt.Format("15:04:05")))
+		content.WriteString(wrap(ev.Content, m.width-4) + "
+
+")
 	}
 
 	m.viewport.SetContent(content.String())
@@ -240,5 +246,6 @@ func wrap(s string, width int) string {
 	if current != "" {
 		lines = append(lines, current)
 	}
-	return strings.Join(lines, "\n")
+	return strings.Join(lines, "
+")
 }

@@ -2,15 +2,12 @@ package store
 
 import (
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/vibelog/vibelog/pkg/types"
 	_ "modernc.org/sqlite"
 )
-
 type Store struct {
 	db *sql.DB
 }

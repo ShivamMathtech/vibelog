@@ -82,7 +82,7 @@ func (s *Server) handleRequest(req JSONRPCRequest) *JSONRPCResponse {
 	case "initialize":
 		return s.handleInitialize(req)
 	case "initialized":
-		return nil // notification, no response
+		return nil
 	case "tools/list":
 		return s.handleToolsList(req)
 	case "tools/call":
@@ -110,7 +110,7 @@ func (s *Server) handleToolsList(req JSONRPCRequest) *JSONRPCResponse {
 	tools := []map[string]interface{}{
 		{
 			"name":        "search_sessions",
-			"description": "Search past coding sessions by keyword, file, or decision. Returns relevant events from session history.",
+			"description": "Search past coding sessions by keyword, file, or decision.",
 			"inputSchema": map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -132,13 +132,13 @@ func (s *Server) handleToolsList(req JSONRPCRequest) *JSONRPCResponse {
 		},
 		{
 			"name":        "get_decisions",
-			"description": "Retrieve tagged decisions from past sessions. Use this to understand why certain technical choices were made.",
+			"description": "Retrieve tagged decisions from past sessions.",
 			"inputSchema": map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"session_id": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional: specific session ID. If omitted, returns all recent decisions.",
+						"description": "Optional: specific session ID",
 					},
 					"tags": map[string]interface{}{
 						"type":        "string",
@@ -149,7 +149,7 @@ func (s *Server) handleToolsList(req JSONRPCRequest) *JSONRPCResponse {
 		},
 		{
 			"name":        "get_file_history",
-			"description": "Get the history of changes and decisions related to a specific file across all sessions.",
+			"description": "Get history of changes related to a specific file.",
 			"inputSchema": map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -163,7 +163,7 @@ func (s *Server) handleToolsList(req JSONRPCRequest) *JSONRPCResponse {
 		},
 		{
 			"name":        "summarize_session",
-			"description": "Generate a structured summary of a specific session including key decisions, file changes, and prompts.",
+			"description": "Generate a structured summary of a specific session.",
 			"inputSchema": map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -226,7 +226,6 @@ func (s *Server) toolSearchSessions(args json.RawMessage) (interface{}, error) {
 		return nil, err
 	}
 
-	// Filter by file_path if provided
 	if req.FilePath != "" {
 		var filtered []types.SearchResult
 		for _, r := range results {
@@ -237,7 +236,6 @@ func (s *Server) toolSearchSessions(args json.RawMessage) (interface{}, error) {
 		results = filtered
 	}
 
-	// Filter by since if provided
 	if req.Since != "" {
 		since, err := time.Parse("2006-01-02", req.Since)
 		if err == nil {
@@ -269,7 +267,6 @@ func (s *Server) toolGetDecisions(args json.RawMessage) (interface{}, error) {
 	if req.SessionID != "" {
 		decisions, err = s.store.GetDecisions(req.SessionID)
 	} else {
-		// Get all decisions from recent sessions
 		rows, err := s.store.DB().Query("SELECT id, event_id, session_id, title, context, tags, created_at FROM decisions ORDER BY created_at DESC LIMIT 50")
 		if err != nil {
 			return nil, err
@@ -288,7 +285,6 @@ func (s *Server) toolGetDecisions(args json.RawMessage) (interface{}, error) {
 		return nil, err
 	}
 
-	// Filter by tags
 	if req.Tags != "" {
 		tagList := strings.Split(req.Tags, ",")
 		var filtered []types.Decision
@@ -314,6 +310,7 @@ func (s *Server) toolGetFileHistory(args json.RawMessage) (interface{}, error) {
 		return nil, err
 	}
 
+	pattern := fmt.Sprintf("%%%s%%", req.FilePath)
 	rows, err := s.store.DB().Query(`
 		SELECT e.session_id, e.type, e.content, e.created_at, s.branch
 		FROM events e
@@ -321,7 +318,7 @@ func (s *Server) toolGetFileHistory(args json.RawMessage) (interface{}, error) {
 		WHERE e.metadata LIKE ? OR e.content LIKE ?
 		ORDER BY e.created_at DESC
 		LIMIT 50
-	`, fmt.Sprintf("%%"file_path":"%s%%", req.FilePath), fmt.Sprintf("%%%s%%", req.FilePath))
+	`, pattern, pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -362,18 +359,27 @@ func (s *Server) toolSummarizeSession(args json.RawMessage) (interface{}, error)
 	}
 
 	var summary strings.Builder
-	summary.WriteString(fmt.Sprintf("Session: %s\n", session.ID))
-	summary.WriteString(fmt.Sprintf("Branch: %s\n", session.Branch))
-	summary.WriteString(fmt.Sprintf("Started: %s\n\n", session.StartedAt.Format(time.RFC3339)))
+	summary.WriteString(fmt.Sprintf("Session: %s
+", session.ID))
+	summary.WriteString(fmt.Sprintf("Branch: %s
+", session.Branch))
+	summary.WriteString(fmt.Sprintf("Started: %s
 
-	summary.WriteString("Key Decisions:\n")
+", session.StartedAt.Format(time.RFC3339)))
+
+	summary.WriteString("Key Decisions:
+")
 	for _, d := range decisions {
-		summary.WriteString(fmt.Sprintf("- %s: %s\n", d.Title, d.Context))
+		summary.WriteString(fmt.Sprintf("- %s: %s
+", d.Title, d.Context))
 	}
 
-	summary.WriteString("\nEvents:\n")
+	summary.WriteString("
+Events:
+")
 	for _, e := range events {
-		summary.WriteString(fmt.Sprintf("[%s] %s: %s\n", e.CreatedAt.Format("15:04"), e.Type, truncate(e.Content, 100)))
+		summary.WriteString(fmt.Sprintf("[%s] %s: %s
+", e.CreatedAt.Format("15:04"), e.Type, truncate(e.Content, 100)))
 	}
 
 	return map[string]interface{}{
@@ -406,7 +412,8 @@ func (s *Server) writeResponse(resp *JSONRPCResponse) error {
 	if _, err := s.writer.Write(data); err != nil {
 		return err
 	}
-	if _, err := s.writer.Write([]byte("\n")); err != nil {
+	if _, err := s.writer.Write([]byte("
+")); err != nil {
 		return err
 	}
 	return s.writer.Flush()
